@@ -1,7 +1,8 @@
 import tensorflow as tf
 import os
 import numpy as np
-from PIL import ImageOps,Image
+from PIL import ImageOps
+import Image
 import cv2
 import parameters
 
@@ -21,8 +22,8 @@ def get_next_batch(batch_size, image_size):
    imgFiles = []
    for letter in allFiles:
       for image in os.listdir(os.path.join(FLAGS.data_path, letter)):
-         if image.endswith('.jpg'):
-            absPath = os.path.join(FLAGS.data_path, letter, image)
+         if image.endswith('.jpg') and not image.startswith('._'):
+	    absPath = os.path.join(FLAGS.data_path, letter, image)
 	    imgFiles.append(absPath)
 
    idx = np.random.permutation(len(imgFiles))
