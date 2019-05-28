@@ -13,7 +13,7 @@ flags.DEFINE_float("dropout", 0.5, "dropout rate")
 flags.DEFINE_integer("display_step", 1, "define display_step")
 flags.DEFINE_boolean("use_bottleneck", False, "change the sub-layer on Resnet")
 flags.DEFINE_string("saved_path", "./Saved/", "path to save model: Will create automatically if it does not exist")
-flags.DEFINE_integer("num_steps", 5500, "define the number of steps to train")
+flags.DEFINE_integer("num_steps", 555555500, "define the number of steps to train")
 flags.DEFINE_boolean("train_mode", True, "True if in train mode, False if in Test mode")
 flags.DEFINE_string("data_path", "./new_dataset", "path of the dataset: inside this directory there should be files named with label")
 flags.DEFINE_integer("learning_rate", 0.0001, "learning_rate during training")
@@ -26,10 +26,9 @@ flags.DEFINE_integer("model_num", 0, "0: default model / 1: resnet / 2: bottlene
 # Input Graph
 X = tf.placeholder(tf.float32,[None,FLAGS.image_size,FLAGS.image_size,FLAGS.dim], name="Input")
 Y = tf.placeholder(tf.uint8,[None,FLAGS.num_classes], name="Target")
-keep_prob = tf.placeholder(tf.float32)
 
 # Tensorboard stuff
-global_step = tf.train.get_or_create_global_step()
+# global_step = tf.train.get_or_create_global_step()
 
 weights = {
     'wc1': tf.Variable(tf.random_normal([5,5,FLAGS.dim,32])),
@@ -47,9 +46,10 @@ biases = {
 
 # Creating the model
 if (FLAGS.model_num == 0):
+	print("Training by Original Model")
 	logits = layers.convnet(X,weights,biases,FLAGS.dropout)
 else: 
-	resnet(X)
+	logits = layers.resnet(X)
 prediction = tf.nn.softmax(logits,name='prediction')
 
 # Defining the loss
@@ -81,21 +81,19 @@ with tf.Session() as sess:
     for step in range(1,FLAGS.num_steps+1):
 
         # Get the next batch
-        batch_x,batch_y,batch_mask = util.get_next_batch(batch_size=FLAGS.batch_size, image_size=FLAGS.image_size)
-        batch_y = tf.one_hot(np.reshape(batch_y, [-1]),FLAGS.num_classes)
-		  if FLAGS.append_handmask:
-				batch_x = tf.concat([batch_x, batch_mask], axis = 3)     
+        batch_x, batch_y = util.get_next_batch(batch_size=FLAGS.batch_size, image_size=FLAGS.image_size)
+	batch_y = tf.one_hot(np.reshape(batch_y, [-1]),FLAGS.num_classes)
 
-		  _, s = sess.run([training_op, summary],feed_dict={X:batch_x,Y:sess.run(batch_y),keep_prob:FLAGS.dropout})
+	_, s = sess.run([training_op, summary],feed_dict={X:batch_x,Y:sess.run(batch_y)})
 
         writer.add_summary(s, step)
 
         if step%FLAGS.display_step == 0 or step == 1:
-            loss,acc = sess.run([loss_op,accuracy],feed_dict={X:batch_x,Y:sess.run(batch_y),keep_prob:FLAGS.dropout})
+            loss,acc = sess.run([loss_op,accuracy],feed_dict={X:batch_x,Y:sess.run(batch_y)})
             print("Step: {} / Loss: {}  / Accuracy: {}".format(step, loss, acc))
         if step%saver_step == 0:
 	     if (not os.path.exists(FLAGS.saved_path)): 
-				os.mkdir(FLAGS.saved_path)
-				saver.save(sess,save_path=FLAGS.saved_path+str(step+1))
+		os.mkdir(FLAGS.saved_path)
+		saver.save(sess,save_path=FLAGS.saved_path+str(step+1))
 
     print('Done Training!!')
