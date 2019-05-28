@@ -7,49 +7,58 @@ import parameters
 
 # get batch of images
 def get_next_batch(batch_size, image_size):
-    flags = tf.app.flags
-    FLAGS = flags.FLAGS
+   flags = tf.app.flags
+   FLAGS = flags.FLAGS
 
-	allFiles = os.listdir(FLAGS.data_path)
+   allFiles = os.listdir(FLAGS.data_path)
  
    # make a dict containing labels
    _letter = dict()
    for i in range(len(allFiles)):
-		_letter.update({str(allFiles[i]):i})
-    	num_classes = len(allFiles)    
+	_letter.update({str(allFiles[i]):i})
+   num_classes = len(allFiles)    
 	
    imgFiles = []
    for letter in allFiles:
       for image in os.listdir(os.path.join(FLAGS.data_path, letter)):
          if image.endswith('.jpg'):
             absPath = os.path.join(FLAGS.data_path, letter, image)
-		   imgFiles.append(absPath)
+	    imgFiles.append(absPath)
 
    idx = np.random.permutation(len(imgFiles))
    idx = idx[0:batch_size]
 
    images = []
    labels = []
-	mask_images = []
+   mask_images = []
 
    for item in idx:
-	   # Get Image
-		img = Image.open(imgFiles[item])
-		img = np.array(img.resize((image_size, image_size)))
-      images.append(img)
-		mask_images.append(convert_img(imgFiles[item]))
-		# Get Labels
-      labels.append(int(_letter[imgFiles[item].split('/')[-2]]))
+   # Get Image
+	img = Image.open(imgFiles[item])
+	img = np.array(img.resize((image_size, image_size)))
+      	images.append(img)
+	convert = convert_img(imgFiles[item])
+	mask_images.append(convert)
+	# Get Labels
+        labels.append(int(_letter[imgFiles[item].split('/')[-2]]))
 
    images = np.reshape(images, [-1, image_size, image_size, 3])
    mask_images = np.reshape(mask_images, [-1, image_size, image_size, 1])
-	labels = np.array(labels)
+   labels = np.array(labels)
    labels = np.reshape(labels,[-1,1])
-   return images.astype(np.float32), mask_images.astype(np.float32), labels
+
+   if FLAGS.append_handmask:
+	images = np.concatenate((images, mask_images), axis = 3)   
+
+   return images.astype(np.float32), labels
 
 
 
 def convert_img(path):
+    
+    flags = tf.app.flags
+    FLAGS = flags.FLAGS
+    
     frame = cv2.imread(path)
     frame = cv2.resize(frame, (FLAGS.image_size, FLAGS.image_size))
     convert_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -71,4 +80,5 @@ def convert_img(path):
     skin = cv2.bitwise_and(frame, frame, mask=skinmask)
     frame = cv2.addWeighted(frame, 1.5, skin, -0.5, 0)
     skin = cv2.bitwise_and(frame, frame, mask=skinmask)
-    return skin # black except the part with hand
+    h, s, v = cv2.split(skin) 
+    return v # black except the part with hand
