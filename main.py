@@ -12,7 +12,7 @@ flags.DEFINE_integer("image_size", 64, "define input image size")
 flags.DEFINE_float("dropout", 0.5, "dropout rate")
 flags.DEFINE_integer("display_step", 1, "define display_step")
 flags.DEFINE_boolean("use_bottleneck", False, "change the sub-layer on Resnet")
-flags.DEFINE_string("saved_path", "./Saved/", "path to save model: Will create automatically if it does not exist")
+flags.DEFINE_string("saved_path", "Saved", "path to save model: Will create automatically if it does not exist")
 flags.DEFINE_integer("num_steps", 555555500, "define the number of steps to train")
 flags.DEFINE_boolean("train_mode", True, "True if in train mode, False if in Test mode")
 flags.DEFINE_string("data_path", "./new_dataset", "path of the dataset: inside this directory there should be files named with label")
@@ -72,8 +72,8 @@ saver = tf.train.Saver()
 init = tf.global_variables_initializer()
 saver_step = FLAGS.save_steps
 with tf.Session() as sess:
-    dir = './Tensorboard'
-    if not os.path.exists(dir): os.mkdir(dir)
+    dir = os.path.join('./tensorboard', FLAGS.saved_path)
+    if not os.path.exists(dir): os.makedirs(dir)
     writer = tf.summary.FileWriter(logdir=dir, graph=sess.graph)
 
     sess.run(init)
@@ -94,6 +94,6 @@ with tf.Session() as sess:
         if step%saver_step == 0:
 	     if (not os.path.exists(FLAGS.saved_path)): 
 		os.mkdir(FLAGS.saved_path)
-		saver.save(sess,save_path=FLAGS.saved_path+str(step+1))
+		saver.save(sess,save_path=os.path.join(FLAGS.saved_path, str(step+1)))
 
     print('Done Training!!')
