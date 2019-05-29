@@ -12,20 +12,29 @@ def get_next_batch(batch_size, image_size):
    FLAGS = flags.FLAGS
 
    allFiles = os.listdir(FLAGS.data_path)
- 
+
    # make a dict containing labels
    _letter = dict()
    for i in range(len(allFiles)):
-	_letter.update({str(allFiles[i]):i})
-   num_classes = len(allFiles)    
-	
-   imgFiles = []
-   for letter in allFiles:
-      for image in os.listdir(os.path.join(FLAGS.data_path, letter)):
-         if image.endswith('.jpg') and not image.startswith('._'):
-	    absPath = os.path.join(FLAGS.data_path, letter, image)
-	    imgFiles.append(absPath)
+        _letter.update({str(allFiles[i]):i})
+   num_classes = len(allFiles)
 
+   imgFiles = [] # train image file
+   t_imgFiles = [] # test image file
+   for letter in allFiles:
+        for image in os.listdir(os.path.join(FLAGS.data_path, letter)):
+                img_path = os.path.join(FLAGS.data_path, letter)
+                num_imgs = len(os.listdir(img_path))
+                train_imgs = int(num_imgs * 0.9)
+                for i in range(train_imgs):
+                        if image.endswith('.jpg') and not image.startswith('._'):
+                                absPath = os.path.join(img_path, image)
+                                imgFiles.append(absPath)
+                if image.endswith('.jpg') and not image.startswith('._'):
+                        absPath = os.path.join(img_path, image)
+                        t_imgFiles.append(absPath)
+
+   #### train image ####
    idx = np.random.permutation(len(imgFiles))
    idx = idx[0:batch_size]
 
@@ -35,12 +44,12 @@ def get_next_batch(batch_size, image_size):
 
    for item in idx:
    # Get Image
-	img = Image.open(imgFiles[item])
-	img = np.array(img.resize((image_size, image_size)))
-      	images.append(img)
-	convert = convert_img(imgFiles[item])
-	mask_images.append(convert)
-	# Get Labels
+        img = Image.open(imgFiles[item])
+        img = np.array(img.resize((image_size, image_size)))
+        images.append(img)
+        convert = convert_img(imgFiles[item])
+        mask_images.append(convert)
+        # Get Labels
         labels.append(int(_letter[imgFiles[item].split('/')[-2]]))
 
    images = np.reshape(images, [-1, image_size, image_size, 3])
@@ -49,17 +58,43 @@ def get_next_batch(batch_size, image_size):
    labels = np.reshape(labels,[-1,1])
 
    if FLAGS.append_handmask:
-	images = np.concatenate((images, mask_images), axis = 3)   
+        images = np.concatenate((images, mask_images), axis = 3)
 
-   return images.astype(np.float32), labels
+   #### test image #####
+   t_idx = np.random.permutation(len(t_imgFiles))
+   t_idx = t_idx[0:batch_size]
+
+   t_images = []
+   t_labels = []
+   t_mask_images = []
+
+   for t_item in t_idx:
+   # Get Image
+        img = Image.open(t_imgFiles[t_item])
+        img = np.array(img.resize((image_size, image_size)))
+        t_images.append(img)
+        convert = convert_img(t_imgFiles[t_item])
+        t_mask_images.append(convert)
+        # Get Labels
+        t_labels.append(int(_letter[t_imgFiles[t_item].split('/')[-2]]))
+
+   t_images = np.reshape(t_images, [-1, image_size, image_size, 3])
+   t_mask_images = np.reshape(t_mask_images, [-1, image_size, image_size, 1])
+   t_labels = np.array(t_labels)
+   t_labels = np.reshape(t_labels,[-1,1])
+
+   if FLAGS.append_handmask:
+        t_images = np.concatenate((t_images, t_mask_images), axis = 3)
+
+   return images.astype(np.float32), labels, t_images.astype(np.float32), t_labels
 
 
 
 def convert_img(path):
-    
+
     flags = tf.app.flags
     FLAGS = flags.FLAGS
-    
+
     frame = cv2.imread(path)
     frame = cv2.resize(frame, (FLAGS.image_size, FLAGS.image_size))
     convert_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -81,5 +116,6 @@ def convert_img(path):
     skin = cv2.bitwise_and(frame, frame, mask=skinmask)
     frame = cv2.addWeighted(frame, 1.5, skin, -0.5, 0)
     skin = cv2.bitwise_and(frame, frame, mask=skinmask)
-    h, s, v = cv2.split(skin) 
+    h, s, v = cv2.split(skin)
     return v # black except the part with hand
+
