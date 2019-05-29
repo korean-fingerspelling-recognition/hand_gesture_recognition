@@ -1,5 +1,6 @@
 # hand_gesture_recognition
 
+```
 optional arguments:
   -h, --help            show this help message and exit
   --append_handmask [APPEND_HANDMASK]
@@ -35,3 +36,4 @@ optional arguments:
                         number of classes
   --model_num MODEL_NUM
                         0: default model / 1: resnet / 2: bottlenect resnet
+  ```
