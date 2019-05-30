@@ -22,17 +22,16 @@ def get_next_batch(batch_size, image_size):
    imgFiles = [] # train image file
    t_imgFiles = [] # test image file
    for letter in allFiles:
-        for image in os.listdir(os.path.join(FLAGS.data_path, letter)):
-                img_path = os.path.join(FLAGS.data_path, letter)
-                num_imgs = len(os.listdir(img_path))
-                train_imgs = int(num_imgs * 0.9)
-                for i in range(train_imgs):
-                        if image.endswith('.jpg') and not image.startswith('._'):
-                                absPath = os.path.join(img_path, image)
-                                imgFiles.append(absPath)
-                if image.endswith('.jpg') and not image.startswith('._'):
-                        absPath = os.path.join(img_path, image)
-                        t_imgFiles.append(absPath)
+        img_path = os.path.join(FLAGS.data_path, letter)
+        all_img_list = os.listdir(img_path)
+        train_imgs = int(len(all_img_list) * 0.9)
+        for i in range(len(all_img_list)):
+            image = all_img_list[i]
+            if image.endswith('.jpg') and not image.startswith('._'):
+               absPath = os.path.join(img_path, image)
+               if i > train_imgs: t_imgFiles.append(absPath)
+               else: imgFiles.append(absPath)
+   print("Training data: {} / Test data: {}".format(len(imgFiles), len(t_imgFiles)))
 
    #### train image ####
    idx = np.random.permutation(len(imgFiles))
