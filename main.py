@@ -4,26 +4,30 @@ import layers
 import numpy as np
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-
 # flags
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_boolean("append_handmask", True, 'If true, train with handmask appended')
-flags.DEFINE_integer("image_size", 64, "define input image size")
+flags.DEFINE_boolean("append_handmask", False, 'If true, train with handmask appended')
+flags.DEFINE_integer("image_size", 48, "define input image size")
 flags.DEFINE_float("dropout", 0.5, "dropout rate")
 flags.DEFINE_integer("display_step", 1, "define display_step")
 flags.DEFINE_boolean("use_bottleneck", False, "change the sub-layer on Resnet")
 flags.DEFINE_string("saved_path", "Default", "path to save model: Will create automatically if it does not exist")
-flags.DEFINE_integer("num_steps", 555555500, "define the number of steps to train")
+flags.DEFINE_integer("num_steps", 100000, "define the number of steps to train")
 flags.DEFINE_boolean("train_mode", True, "True if in train mode, False if in Test mode")
 flags.DEFINE_string("data_path", "./result", "path of the dataset: inside this directory there should be files named with label")
 flags.DEFINE_float("learning_rate", 0.0001, "learning_rate during training")
-flags.DEFINE_integer("batch_size", 64, "batch size during training")
+flags.DEFINE_integer("batch_size", 128, "batch size during training")
 flags.DEFINE_integer("save_steps", 500, "number of save steps")
 flags.DEFINE_integer("dim", 4, "input_channel is 4")
-flags.DEFINE_integer("num_classes", 8, "number of classes")
+flags.DEFINE_integer("num_classes", 12, "number of classes")
 flags.DEFINE_integer("model_num", 1, "0: default model / 1: resnet / 2: bottlenect resnet")
+flags.DEFINE_string("gpu", 0, "choose gpu between 0 or 1")
+
+gpu = FLAGS.gpu
+os.environ["CUDA_VISIBLE_DEVICES"] = gpu
+print("current using gpu: {}".format(gpu))
+
 
 # Input Graph
 X = tf.placeholder(tf.float32,[None,FLAGS.image_size,FLAGS.image_size,FLAGS.dim], name="Input")
@@ -48,10 +52,10 @@ biases = {
 
 # Creating the model
 if (FLAGS.model_num == 0):
-        print("Training by Original Model")
-        logits = layers.convnet(X,weights,biases,FLAGS.dropout)
-else:
-        logits = layers.resnet(X)
+	print("Training by Original Model")
+	logits = layers.convnet(X,weights,biases,FLAGS.dropout)
+else: 
+	logits = layers.resnet(X)
 prediction = tf.nn.softmax(logits,name='prediction')
 
 # Defining the loss
@@ -75,7 +79,7 @@ saver_step = FLAGS.save_steps
 with tf.Session() as sess:
     dir = os.path.join('./tensorboard', FLAGS.saved_path)
     if not os.path.exists(dir): os.makedirs(dir)
-    train_writer = tf.summary.FileWriter(logdir=dir+'/Train', graph=sess.graph)
+    train_writer = tf.summary.FileWriter(logdir=dir+'/Train', graph=sess.graph) 
     test_writer = tf.summary.FileWriter(logdir=dir+'/Test')
 
     sess.run(init)
@@ -84,23 +88,22 @@ with tf.Session() as sess:
 
         # Get the next batch
         batch_x, batch_y, t_batch_x, t_batch_y = util.get_next_batch(batch_size=FLAGS.batch_size, image_size=FLAGS.image_size)
-        batch_y = tf.one_hot(np.reshape(batch_y, [-1]),FLAGS.num_classes)
-        t_batch_y = tf.one_hot(np.reshape(t_batch_y, [-1]), FLAGS.num_classes)
-        _ = sess.run([optimizer], feed_dict = {X: batch_x, Y:sess.run(batch_y)})
-        # _, s = sess.run([training_op, summary],feed_dict={X:batch_x,Y:sess.run(batch_y)})
-        # train_writer.add_summary(s, step)
-        # _, t = sess.run([training])        
+	batch_y = tf.one_hot(np.reshape(batch_y, [-1]),FLAGS.num_classes)
+	t_batch_y = tf.one_hot(np.reshape(t_batch_y, [-1]), FLAGS.num_classes)
+	_ = sess.run([optimizer], feed_dict = {X: batch_x, Y:sess.run(batch_y)})
+	# _, s = sess.run([training_op, summary],feed_dict={X:batch_x,Y:sess.run(batch_y)})
+	# train_writer.add_summary(s, step)
+	# _, t = sess.run([training])        
 
-        if step%FLAGS.display_step == 0 or step == 1:
+	if step%FLAGS.display_step == 0 or step == 1:
             loss, acc, s = sess.run([loss_op, accuracy, summary],feed_dict={X:batch_x,Y:sess.run(batch_y)})
-            train_writer.add_summary(s, step)
-            t_loss, t_acc, t_s = sess.run([loss_op, accuracy, summary], feed_dict={X:t_batch_x, Y:sess.run(t_batch_y)})
-            test_writer.add_summary(t_s, step)
-            print("Step: {} / Training (Loss: {} and accuracy: {}) / Test (loss: {} and accuracy: {})".format(step, loss, acc, t_loss, t_acc))
+	    train_writer.add_summary(s, step)
+	    t_loss, t_acc, t_s = sess.run([loss_op, accuracy, summary], feed_dict={X:t_batch_x, Y:sess.run(t_batch_y)})
+	    test_writer.add_summary(t_s, step)
+	    print("Step: {} / Training (Loss: {} and accuracy: {}) / Test (loss: {} and accuracy: {})".format(step, loss, acc, t_loss, t_acc))
         if step%saver_step == 0:
-             if (not os.path.exists(FLAGS.saved_path)):
-                os.mkdir(FLAGS.saved_path)
-                saver.save(sess,save_path=os.path.join(FLAGS.saved_path, str(step+1)))
+	     if (not os.path.exists(FLAGS.saved_path)): 
+		os.mkdir(FLAGS.saved_path)
+		saver.save(sess,save_path=os.path.join(FLAGS.saved_path, str(step+1)))
 
     print('Done Training!!')
-~                                
