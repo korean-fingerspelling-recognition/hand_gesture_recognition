@@ -12,26 +12,27 @@ def get_next_batch(batch_size, image_size):
    FLAGS = flags.FLAGS
 
    allFiles = os.listdir(FLAGS.data_path)
-
+ 
    # make a dict containing labels
    _letter = dict()
    for i in range(len(allFiles)):
-        _letter.update({str(allFiles[i]):i})
-   num_classes = len(allFiles)
-
+	_letter.update({str(allFiles[i]):i})
+   num_classes = len(allFiles)    
+	
    imgFiles = [] # train image file
    t_imgFiles = [] # test image file
    for letter in allFiles:
-        img_path = os.path.join(FLAGS.data_path, letter)
-        all_img_list = os.listdir(img_path)
-        train_imgs = int(len(all_img_list) * 0.9)
-        for i in range(len(all_img_list)):
-            image = all_img_list[i]
-            if image.endswith('.jpg') and not image.startswith('._'):
-               absPath = os.path.join(img_path, image)
-               if i > train_imgs: t_imgFiles.append(absPath)
-               else: imgFiles.append(absPath)
-   print("Training data: {} / Test data: {}".format(len(imgFiles), len(t_imgFiles)))
+	img_path = os.path.join(FLAGS.data_path, letter)
+	all_img_list = os.listdir(img_path)
+	train_imgs = int(len(all_img_list) * 0.9)
+	for i in range(len(all_img_list)):
+		image = all_img_list[i]
+		if image.endswith('.jpg') and not image.startswith('._'):
+			absPath = os.path.join(img_path, image)
+			if i > train_imgs: t_imgFiles.append(absPath)
+			else: imgFiles.append(absPath)
+   # print("Training data: {} and Test data: {}".format(len(imgFiles), len(t_imgFiles)))
+
 
    #### train image ####
    idx = np.random.permutation(len(imgFiles))
@@ -43,12 +44,12 @@ def get_next_batch(batch_size, image_size):
 
    for item in idx:
    # Get Image
-        img = Image.open(imgFiles[item])
-        img = np.array(img.resize((image_size, image_size)))
-        images.append(img)
-        convert = convert_img(imgFiles[item])
-        mask_images.append(convert)
-        # Get Labels
+	img = Image.open(imgFiles[item])
+	img = np.array(img.resize((image_size, image_size)))
+      	images.append(img)
+	convert = convert_img(imgFiles[item])
+	mask_images.append(convert)
+	# Get Labels
         labels.append(int(_letter[imgFiles[item].split('/')[-2]]))
 
    images = np.reshape(images, [-1, image_size, image_size, 3])
@@ -57,11 +58,28 @@ def get_next_batch(batch_size, image_size):
    labels = np.reshape(labels,[-1,1])
 
    if FLAGS.append_handmask:
-        images = np.concatenate((images, mask_images), axis = 3)
+	images = np.concatenate((images, mask_images), axis = 3)   
 
    #### test image #####
+   test_img_num = len(t_imgFiles)
    t_idx = np.random.permutation(len(t_imgFiles))
-   t_idx = t_idx[0:batch_size]
+   t_idx = t_idx[0:test_img_num]
+
+   '''
+   img = Image.open(t_imgFiles[t_idx])
+   img = np.array(img.resize((image_size, image_size)))
+   convert = convert_img(t_imgFiles[t_idx])
+   t_label = (int(_letter[t_imgFiles[t_idx].split('/')[-2]]))
+   t_images = np.reshape(img, [-1, image_size, image_size, 3])
+   t_mask_image = np.reshape(convert, [-1, image_size, image_size, 1])
+   t_labels = np.array(t_label)
+   t_label = np.reshape(t_labels, [-1, 1])
+   if FLAGS.append_handmask:
+	t_images = np.concatenate((t_images, t_mask_image), axis = 3)
+
+   return images.astype(np.float32), labels, t_images.astype(np.float32), t_label
+
+  '''
 
    t_images = []
    t_labels = []
@@ -69,12 +87,12 @@ def get_next_batch(batch_size, image_size):
 
    for t_item in t_idx:
    # Get Image
-        img = Image.open(t_imgFiles[t_item])
-        img = np.array(img.resize((image_size, image_size)))
-        t_images.append(img)
-        convert = convert_img(t_imgFiles[t_item])
-        t_mask_images.append(convert)
-        # Get Labels
+	img = Image.open(t_imgFiles[t_item])
+	img = np.array(img.resize((image_size, image_size)))
+      	t_images.append(img)
+	convert = convert_img(t_imgFiles[t_item])
+	t_mask_images.append(convert)
+	# Get Labels
         t_labels.append(int(_letter[t_imgFiles[t_item].split('/')[-2]]))
 
    t_images = np.reshape(t_images, [-1, image_size, image_size, 3])
@@ -83,17 +101,17 @@ def get_next_batch(batch_size, image_size):
    t_labels = np.reshape(t_labels,[-1,1])
 
    if FLAGS.append_handmask:
-        t_images = np.concatenate((t_images, t_mask_images), axis = 3)
+	t_images = np.concatenate((t_images, t_mask_images), axis = 3)   
 
    return images.astype(np.float32), labels, t_images.astype(np.float32), t_labels
 
 
 
 def convert_img(path):
-
+    
     flags = tf.app.flags
     FLAGS = flags.FLAGS
-
+    
     frame = cv2.imread(path)
     frame = cv2.resize(frame, (FLAGS.image_size, FLAGS.image_size))
     convert_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -115,6 +133,6 @@ def convert_img(path):
     skin = cv2.bitwise_and(frame, frame, mask=skinmask)
     frame = cv2.addWeighted(frame, 1.5, skin, -0.5, 0)
     skin = cv2.bitwise_and(frame, frame, mask=skinmask)
-    h, s, v = cv2.split(skin)
+    h, s, v = cv2.split(skin) 
     return v # black except the part with hand
 
