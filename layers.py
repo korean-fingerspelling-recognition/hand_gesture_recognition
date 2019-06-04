@@ -33,7 +33,7 @@ def convnet(inputs, weights, biases, keep_prob):
     return tf.add(tf.matmul(fc1,weights['out']),biases['out'],name='logits')
 
 def resnet(inputs):
-	with tf.variable_scope("network", reuse= not FLAGS.train_mode):
+	with tf.variable_scope("network"):
 		if FLAGS.model_num==2: # in case of deep model
 			residual_block = bottle_resblock
 		else: #FLAGS.model_num==1
