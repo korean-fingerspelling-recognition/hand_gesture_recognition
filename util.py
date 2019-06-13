@@ -1,10 +1,11 @@
+
 import tensorflow as tf
 import os
 import numpy as np
 from PIL import ImageOps
 import Image
 import cv2
-import parameters
+import random
 
 # get batch of images
 def get_next_batch(batch_size, image_size):
@@ -73,9 +74,10 @@ def get_next_batch(batch_size, image_size):
 	img = Image.open(t_imgFiles[t_item])
 	img = np.array(img.resize((image_size, image_size)))
 	
-	light_effect = light_effect(t_imgFiles[t_item])
+	light_img = light_effect(t_imgFiles[t_item])
 	
-	if random.randint(0, 10) < 5: t_images.append(img) else t_images.append(light_effect)
+	if random.randint(0, 10) < 5: t_images.append(img) 
+	else: t_images.append(light_img)
 
 	convert = convert_img(t_imgFiles[t_item])
 	t_mask_images.append(convert)
@@ -124,6 +126,10 @@ def convert_img(path):
     return v # black except the part with hand
 
 def light_effect(path):
+	
+	flags = tf.app.flags
+	FLAGS = flags.FLAGS
+
 	frame = cv2.imread(path)
 	frame = cv2.resize(frame, (FLAGS.image_size, FLAGS.image_size))
 	light_effect = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -131,7 +137,7 @@ def light_effect(path):
 	append = random.randint(1, 30)
 	h = h + append
 	h = cv2.inRange(h, 0, 256)
-	img = cv2.bitwise_and(append, append, mask = h)
+	img = cv2.merge((h, s, v))
 	img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
 	return img
 
