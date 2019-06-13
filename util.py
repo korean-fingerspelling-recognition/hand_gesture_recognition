@@ -46,7 +46,11 @@ def get_next_batch(batch_size, image_size):
    # Get Image
 	img = Image.open(imgFiles[item])
 	img = np.array(img.resize((image_size, image_size)))
-      	images.append(img)
+	
+	light_img = light_effect(imgFiles[item])
+	if random.randint(0, 10) < 5: images.append(img)
+	else: images.append(light_img)
+
 	convert = convert_img(imgFiles[item])
 	mask_images.append(convert)
 	# Get Labels
@@ -72,13 +76,8 @@ def get_next_batch(batch_size, image_size):
    for t_item in t_idx:
    # Get Image
 	img = Image.open(t_imgFiles[t_item])
-	img = np.array(img.resize((image_size, image_size)))
-	
-	light_img = light_effect(t_imgFiles[t_item])
-	
-	if random.randint(0, 10) < 5: t_images.append(img) 
-	else: t_images.append(light_img)
-
+	img = np.array(img.resize((image_size, image_size))
+	t_images.append(img)
 	convert = convert_img(t_imgFiles[t_item])
 	t_mask_images.append(convert)
 	# Get Labels
@@ -140,4 +139,3 @@ def light_effect(path):
 	img = cv2.merge((h, s, v))
 	img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
 	return img
-
