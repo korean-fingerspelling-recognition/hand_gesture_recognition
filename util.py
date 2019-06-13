@@ -31,7 +31,6 @@ def get_next_batch(batch_size, image_size):
 			absPath = os.path.join(img_path, image)
 			if i > train_imgs: t_imgFiles.append(absPath)
 			else: imgFiles.append(absPath)
-   # print("Training data: {} and Test data: {}".format(len(imgFiles), len(t_imgFiles)))
 
 
    #### train image ####
@@ -65,22 +64,6 @@ def get_next_batch(batch_size, image_size):
    t_idx = np.random.permutation(len(t_imgFiles))
    t_idx = t_idx[0:test_img_num]
 
-   '''
-   img = Image.open(t_imgFiles[t_idx])
-   img = np.array(img.resize((image_size, image_size)))
-   convert = convert_img(t_imgFiles[t_idx])
-   t_label = (int(_letter[t_imgFiles[t_idx].split('/')[-2]]))
-   t_images = np.reshape(img, [-1, image_size, image_size, 3])
-   t_mask_image = np.reshape(convert, [-1, image_size, image_size, 1])
-   t_labels = np.array(t_label)
-   t_label = np.reshape(t_labels, [-1, 1])
-   if FLAGS.append_handmask:
-	t_images = np.concatenate((t_images, t_mask_image), axis = 3)
-
-   return images.astype(np.float32), labels, t_images.astype(np.float32), t_label
-
-  '''
-
    t_images = []
    t_labels = []
    t_mask_images = []
@@ -89,7 +72,11 @@ def get_next_batch(batch_size, image_size):
    # Get Image
 	img = Image.open(t_imgFiles[t_item])
 	img = np.array(img.resize((image_size, image_size)))
-      	t_images.append(img)
+	
+	light_effect = light_effect(t_imgFiles[t_item])
+	
+	if random.randint(0, 10) < 5: t_images.append(img) else t_images.append(light_effect)
+
 	convert = convert_img(t_imgFiles[t_item])
 	t_mask_images.append(convert)
 	# Get Labels
@@ -135,4 +122,16 @@ def convert_img(path):
     skin = cv2.bitwise_and(frame, frame, mask=skinmask)
     h, s, v = cv2.split(skin) 
     return v # black except the part with hand
+
+def light_effect(path):
+	frame = cv2.imread(path)
+	frame = cv2.resize(frame, (FLAGS.image_size, FLAGS.image_size))
+	light_effect = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+	h, s, v = cv2.split(light_effect)
+	append = random.randint(1, 30)
+	h = h + append
+	h = cv2.inRange(h, 0, 256)
+	img = cv2.bitwise_and(append, append, mask = h)
+	img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
+	return img
 
