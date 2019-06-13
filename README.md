@@ -37,3 +37,8 @@ optional arguments:
   --gpu                 choose between gpu 0 and gpu 1
   ```
 
+- image_size는 작을 수록 training이 잘되는 경향을 보였다.
+- append_handmask 쓰기 위해서는 dim 4 필요
+- number of steps가 5천 이후 부터는 크게 변화가 없다.
+- dataset은 각 자/모음 당 filename에 그 자모음을 적어서 파일 밑에 해당 이미지 저장. 저장된 파일들을 하나의 파일 results 밑에 넣고 main.py와 같은 곳에 파일 두면 알아서 적용이 된다. 혹은 --data_path로 변경 가능
+- save_steps는 해당 컴퓨터의 용량에 맞게 변경하면 된다.
