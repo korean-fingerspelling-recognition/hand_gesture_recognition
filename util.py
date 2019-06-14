@@ -134,8 +134,8 @@ def light_effect(path):
 	light_effect = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 	h, s, v = cv2.split(light_effect)
 	append = random.randint(1, 30)
-	h = h + append
-	h = cv2.inRange(h, 0, 256)
+	s = s + append
+	s = cv2.inRange(s, 0, 256)
 	img = cv2.merge((h, s, v))
 	img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
 	return img
